@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <h1>Аренда велосипедов в Ульяновске</h1>
+    <p>Городские, горные и электровелосипеды. Бронируйте онлайн, забирайте на Гончарова, 12 — с документами и депозитом за 10 минут.</p>
+    <div class="hero-actions">
+      <a href="{% url 'main:catalog' %}" class="btn btn-white">Забронировать</a>
+      <a href="{% url 'main:prices' %}" class="btn btn-outline-light">Посмотреть цены</a>
+    </div>
+    <ul class="hero-points">
+      <li>От {{ popular.0.price_per_day|default:"700" }} ₽ в сутки</li>
+      <li>Бронь онлайн за 2 минуты</li>
+      <li>Возврат без вопросов за 24 часа</li>
+    </ul>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    <h2>Категории велосипедов</h2>
+    <div class="grid grid-3 categories">
+      {% for cat in categories %}
+      <article class="card category-card">
+        <div class="cat-badge">{{ cat.name|first }}</div>
+        <h3>{{ cat.name }}</h3>
+        <p>{{ cat.description }}</p>
+        <p class="price-from">от {{ cat.units.all.0.price_per_day|default:"700" }} ₽ в сутки</p>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+<section class="section section-alt">
+  <div class="container">
+    <h2>Популярные велосипеды</h2>
+    <div class="grid grid-4">
+      {% for unit in popular %}
+      <article class="card unit-card">
+        <a href="{% url 'main:unit_detail' unit.pk %}">
+          <img src="{{ unit.photo.url }}" alt="Велосипед {{ unit.name }}" width="640" height="480" loading="lazy">
+        </a>
+        <p class="unit-cat">{{ unit.category.name }}</p>
+        <h3><a href="{% url 'main:unit_detail' unit.pk %}">{{ unit.name }}</a></h3>
+        <p class="price">{{ unit.price_per_day }} ₽ <span>/ сутки</span></p>
+        <span class="badge badge-{% if unit.status == 'free' %}green{% else %}gray{% endif %}">{{ unit.get_status_display }}</span>
+      </article>
+      {% empty %}
+      <p>Каталог заполняется. Выполните python manage.py seed_demo.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    <h2>Как это работает</h2>
+    <div class="grid grid-4 steps">
+      <article class="card step"><h3>1. Выберите велосипед</h3><p>Фильтры по категории и цене в каталоге. Свободные даты видны в карточке.</p></article>
+      <article class="card step"><h3>2. Забронируйте</h3><p>Даты, пункт выдачи, ваши данные. Оплата — при получении.</p></article>
+      <article class="card step"><h3>3. Заберите с паспортом</h3><p>Осмотр вместе с сотрудником, подпись акта выдачи, депозит 2 000 ₽.</p></article>
+      <article class="card step"><h3>4. Верните в срок</h3><p>Приёмка в пункте выдачи. Бесплатная отмена — за 24 часа до старта.</p></article>
+    </div>
+  </div>
+</section>
+{% endblock %}
