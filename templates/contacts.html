@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Контакты — Велопрокат{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <nav class="breadcrumbs"><a href="{% url 'main:index' %}">Главная</a> / Контакты</nav>
+    <h1>Контакты</h1>
+    <div class="grid grid-2">
+      <div class="card info-card">
+        <h2>Пункт выдачи</h2>
+        <p>г. Ульяновск, ул. Гончарова, 12</p>
+        <p>Ежедневно 9:00–21:00</p>
+      </div>
+      <div class="card info-card">
+        <h2>Связь</h2>
+        <p>+7 (900) 000-00-00</p>
+        <p>Ответим в течение 15 минут в рабочее время</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

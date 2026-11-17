@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Вход — Велопрокат{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container auth-card card">
+    <h1>Вход</h1>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ form.as_p }}
+      {% if form.non_field_errors %}<p class="error">{{ form.non_field_errors.0 }}</p>{% endif %}
+      <button type="submit" class="btn btn-primary btn-block">Войти</button>
+    </form>
+    <p class="auth-note">Нет аккаунта? <a href="{% url 'main:register' %}">Зарегистрируйтесь</a>.</p>
+  </div>
+</section>
+{% endblock %}

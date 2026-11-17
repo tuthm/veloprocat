@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Цены и тарифы — Велопрокат{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <nav class="breadcrumbs"><a href="{% url 'main:index' %}">Главная</a> / Цены и тарифы</nav>
+    <h1>Цены и тарифы</h1>
+    <p class="lead">Сутки аренды считаются с момента выдачи. Депозит 2 000 ₽ возвращается при исправном возврате.</p>
+    {% for cat in categories %}
+    <h2>{{ cat.name }}</h2>
+    <table class="table">
+      <thead><tr><th>Модель</th><th>Цена в сутки</th><th>Статус</th></tr></thead>
+      <tbody>
+        {% for unit in cat.units.all %}
+        <tr>
+          <td><a href="{% url 'main:unit_detail' unit.pk %}">{{ unit.name }}</a></td>
+          <td>{{ unit.price_per_day|floatformat:"-2" }} ₽</td>
+          <td><span class="badge badge-{% if unit.status == 'free' %}green{% else %}gray{% endif %}">{{ unit.get_status_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Поиск — Велопрокат{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <nav class="breadcrumbs"><a href="{% url 'main:index' %}">Главная</a> / Поиск</nav>
+    <h1>Поиск</h1>
+    <form method="get" action="{% url 'main:search' %}" class="search-form search-page">
+      <input type="text" name="q" value="{{ q }}" placeholder="Например: Merida" aria-label="Поиск">
+      <button type="submit" class="btn btn-primary">Найти</button>
+    </form>
+    {% if q %}
+      <p class="results-count">По запросу «{{ q }}» найдено {{ units|length }} единиц.</p>
+      <div class="grid grid-4">
+        {% for unit in units %}
+        <article class="card unit-card">
+          <a href="{% url 'main:unit_detail' unit.pk %}">
+            <img src="{{ unit.photo.url }}" alt="Велосипед {{ unit.name }}" width="640" height="480" loading="lazy">
+          </a>
+          <h3><a href="{% url 'main:unit_detail' unit.pk %}">{{ unit.name }}</a></h3>
+          <p class="price">{{ unit.price_per_day }} ₽ <span>/ сутки</span></p>
+        </article>
+        {% empty %}
+        <p class="empty">Ничего не найдено. Попробуйте другие слова, например «Stels» или «Volteco».</p>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">Введите поисковый запрос — поищем по названию модели и описанию.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
