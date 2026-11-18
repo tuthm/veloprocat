@@ -14,7 +14,7 @@
   pip install -r requirements.txt
   python manage.py migrate
   python manage.py seed_demo        <-- обязательно: наполняет базу
-  python manage.py runserver
+
 Открыть http://127.0.0.1:8000
 Демо-клиент: логин demo, пароль demo12345 (3 брони в кабинете).
 Админка: python manage.py createsuperuser -> http://127.0.0.1:8000/admin
