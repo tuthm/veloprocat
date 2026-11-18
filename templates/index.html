@@ -37,7 +37,12 @@
       {% for unit in popular %}
       <article class="card unit-card">
         <a href="{% url 'main:unit_detail' unit.pk %}">
-          <img src="{{ unit.photo.url }}" alt="Велосипед {{ unit.name }}" width="640" height="480" loading="lazy">
+          {% if unit.photo %}
+  <img src="{{ unit.photo.url }}" alt="Велосипед {{ unit.name }}" width="640" height="480" loading="lazy">
+{% else %}
+  <div class="card__placeholder">Bike photo</div>
+{% endif %}
+
         </a>
         <p class="unit-cat">{{ unit.category.name }}</p>
         <h3><a href="{% url 'main:unit_detail' unit.pk %}">{{ unit.name }}</a></h3>

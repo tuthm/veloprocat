@@ -1,45 +1,53 @@
 {% extends "base.html" %}
-{% block title %}Каталог — Велопрокат{% endblock %}
+{% block title %}Каталог — ВелоПрокат{% endblock %}
 {% block content %}
-<section class="section">
+<section class="page-head">
   <div class="container">
-    <nav class="breadcrumbs"><a href="{% url 'main:index' %}">Главная</a> / Каталог</nav>
+    <p class="breadcrumbs">Главная / Каталог</p>
     <h1>Каталог велосипедов</h1>
-    <div class="catalog-controls">
+    <div class="catalog-tools">
       <div class="chips">
-        <a href="{% url 'main:catalog' %}" class="chip {% if not current_cat %}chip-active{% endif %}">Все</a>
-        {% for cat in categories %}
-        <a href="{% url 'main:catalog' %}?category={{ cat.slug }}" class="chip {% if current_cat == cat.slug %}chip-active{% endif %}">{{ cat.name }}</a>
+        <a class="chip {% if not active_category %}chip--active{% endif %}" href="{% url 'main:catalog' %}">Все</a>
+        {% for c in categories %}
+          <a class="chip {% if active_category == c.slug %}chip--active{% endif %}"
+             href="{% url 'main:catalog' %}?category={{ c.slug }}">{{ c.name }}</a>
         {% endfor %}
       </div>
-      <form method="get" action="{% url 'main:catalog' %}" class="search-form">
-        {% if current_cat %}<input type="hidden" name="category" value="{{ current_cat }}">{% endif %}
-        <input type="text" name="q" value="{{ q }}" placeholder="Поиск по модели" aria-label="Поиск">
-        <button type="submit" class="btn btn-primary">Найти</button>
+      <form class="search" method="get" action="{% url 'main:catalog' %}" id="search-form">
+        <input type="hidden" name="category" value="{{ active_category }}">
+        <input type="search" name="q" id="search-input" value="{{ query }}"
+               placeholder="Поиск по модели" autocomplete="off">
+        <button type="submit" class="btn btn--solid">Найти</button>
       </form>
     </div>
-    <p class="results-count">Найдено {{ page_obj.paginator.count }} единиц. Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</p>
-    <div class="grid grid-4">
-      {% for unit in page_obj %}
-      <article class="card unit-card">
-        <a href="{% url 'main:unit_detail' unit.pk %}">
-          <img src="{{ unit.photo.url }}" alt="Велосипед {{ unit.name }}" width="640" height="480" loading="lazy">
-        </a>
-        <p class="unit-cat">{{ unit.category.name }}</p>
-        <h3><a href="{% url 'main:unit_detail' unit.pk %}">{{ unit.name }}</a></h3>
-        <p class="price">{{ unit.price_per_day }} ₽ <span>/ сутки</span></p>
-        <span class="badge badge-{% if unit.status == 'free' %}green{% else %}gray{% endif %}">{{ unit.get_status_display }}</span>
-      </article>
+    <p class="catalog-counter" id="catalog-counter">Найдено {{ total }} {{ total|pluralize:"единица,единицы,единиц" }}. Страница {{ page }} из {{ pages }}</p>
+  </div>
+</section>
+
+<section class="catalog">
+  <div class="container">
+    <div class="grid" id="catalog-grid" data-api="{% url 'main:api_units' %}">
+      {% for u in units %}
+        <article class="card">
+          <a href="{% url 'main:unit_detail' u.pk %}">
+            <div class="card__photo">
+              {% if u.photo %}<img src="{{ u.photo.url }}" alt="{{ u.name }}" loading="lazy">
+              {% else %}<div class="card__placeholder">Bike photo</div>{% endif %}
+            </div>
+            <p class="card__category">{{ u.category.name }}</p>
+            <h3 class="card__name">{{ u.name }}</h3>
+            <p class="card__price">{{ u.price_per_day|floatformat:"0" }} ₽ / сутки</p>
+            <span class="status status--{{ u.status }}">{{ u.status_label }}</span>
+          </a>
+        </article>
       {% empty %}
-      <p class="empty">По вашему запросу ничего не найдено. Попробуйте другой фильтр.</p>
+        <p class="empty">Ничего не найдено</p>
       {% endfor %}
     </div>
-    {% if page_obj.has_other_pages %}
     <div class="pagination">
-      {% if page_obj.has_previous %}<a class="btn btn-outline" href="?page={{ page_obj.previous_page_number }}{% if current_cat %}&category={{ current_cat }}{% endif %}{% if q %}&q={{ q }}{% endif %}">← Назад</a>{% endif %}
-      {% if page_obj.has_next %}<a class="btn btn-outline" href="?page={{ page_obj.next_page_number }}{% if current_cat %}&category={{ current_cat }}{% endif %}{% if q %}&q={{ q }}{% endif %}">Вперёд →</a>{% endif %}
+      {% if page > 1 %}<a class="btn btn--outline" href="?category={{ active_category }}&amp;q={{ query }}&amp;page={{ page|add:'-1' }}">← Назад</a>{% endif %}
+      {% if page < pages %}<a class="btn btn--outline" href="?category={{ active_category }}&amp;q={{ query }}&amp;page={{ page|add:'1' }}">Вперёд →</a>{% endif %}
     </div>
-    {% endif %}
   </div>
 </section>
 {% endblock %}
