@@ -1,81 +1,141 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.core.paginator import Paginator
-from django.contrib.auth import authenticate, login, logout
+from decimal import Decimal
+
+from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.views import LoginView
 from django.db.models import Q
-from .models import Category, BikeUnit, Booking
-from .forms import LoginForm, RegisterForm
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+
+from .forms import BookingForm
+from .models import BikeUnit, Booking, Category
+
 
 def index(request):
-    ctx = {
+    popular = BikeUnit.objects.select_related("category").order_by("pk")[:8]
+    return render(request, "index.html", {
+        "units_count": BikeUnit.objects.count(),
+        "popular": popular,
         "categories": Category.objects.all(),
-        "popular": BikeUnit.objects.filter(is_popular=True)[:4],
-    }
-    return render(request, "index.html", ctx)
+    })
+
+
+
 
 def catalog(request):
-    units = BikeUnit.objects.select_related("category").order_by("id")
-    cat = request.GET.get("category")
-    if cat:
-        units = units.filter(category__slug=cat)
-    q = request.GET.get("q")
-    if q:
-        units = units.filter(name__icontains=q)
-    paginator = Paginator(units, 20)
-    page = paginator.get_page(request.GET.get("page"))
+    units = BikeUnit.objects.select_related("category").all()
+    category_slug = request.GET.get("category")
+    query = request.GET.get("q", "").strip()
+
+    if category_slug:
+        units = units.filter(category__slug=category_slug)
+    if query:
+        units = units.filter(name__icontains=query)
+
+    page_size = 20
+    paginator_page = request.GET.get("page", 1)
+    try:
+        page = int(paginator_page)
+    except (TypeError, ValueError):
+        page = 1
+    page = max(page, 1)
+    total = units.count()
+    pages = max(1, (total + page_size - 1) // page_size)
+    page = min(page, pages)
+    items = units[(page - 1) * page_size: page * page_size]
+
     return render(request, "catalog.html", {
-        "page_obj": page, "categories": Category.objects.all(),
-        "current_cat": cat, "q": q or "",
+        "units": items,
+        "total": total,
+        "page": page,
+        "pages": pages,
+        "categories": Category.objects.all(),
+        "active_category": category_slug or "",
+        "query": query,
     })
+
+
+def api_units(request):
+    """JSON для живого поиска: /api/units/?q=merida"""
+    query = request.GET.get("q", "").strip()
+    units = BikeUnit.objects.select_related("category").all()
+    if query:
+        units = units.filter(Q(name__icontains=query) | Q(category__name__icontains=query))
+    data = [
+        {
+            "id": u.pk,
+            "name": u.name,
+            "category": u.category.name,
+            "price": int(u.price_per_day),
+            "status": u.status,
+            "status_label": u.get_status_display(),
+        }
+        for u in units[:50]
+    ]
+    return JsonResponse({"count": len(data), "units": data})
+
 
 def unit_detail(request, pk):
     unit = get_object_or_404(BikeUnit.objects.select_related("category"), pk=pk)
-    same = BikeUnit.objects.filter(category=unit.category).exclude(pk=unit.pk)[:3]
-    return render(request, "unit_detail.html", {"unit": unit, "same": same})
+    initial = {}
+    if request.user.is_authenticated:
+        initial["phone"] = getattr(request.user, "first_name", "") and ""
+    if request.method == "POST":
+        if not request.user.is_authenticated:
+            return redirect("main:login")
+
+        form = BookingForm(request.POST)
+        if form.is_valid():
+            booking = form.save(commit=False)
+            booking.user = request.user
+            days = (booking.end_date - booking.start_date).days
+            booking.total = booking.unit.price_per_day * days
+            booking.status = Booking.STATUS_NEW
+            booking.save()
+            unit.status = BikeUnit.STATUS_RENTED
+            unit.save()
+            return redirect("profile")
+    else:
+        form = BookingForm(initial={"unit": unit.pk})
+    return render(request, "unit_detail.html", {"unit": unit, "form": form})
+
 
 def prices(request):
-    return render(request, "prices.html", {"categories": Category.objects.prefetch_related("units")})
+    return render(request, "prices.html", {"categories": Category.objects.all()})
+
 
 def about(request):
     return render(request, "about.html")
 
+
 def contacts(request):
     return render(request, "contacts.html")
 
+
 @login_required
-def account(request):
-    bookings = Booking.objects.filter(user=request.user).select_related("unit").order_by("-created_at")
-    return render(request, "account.html", {"bookings": bookings})
+def profile(request):
+    bookings = (
+        Booking.objects.filter(user=request.user)
+        .select_related("unit")
+        .order_by("-created_at")
+    )
+    return render(request, "profile.html", {"bookings": bookings})
 
-def search(request):
-    q = request.GET.get("q", "").strip()
-    units = BikeUnit.objects.filter(Q(name__icontains=q) | Q(description__icontains=q)) if q else BikeUnit.objects.none()
-    return render(request, "search.html", {"q": q, "units": units})
 
-def login_view(request):
-    if request.user.is_authenticated:
-        return redirect("main:index")
-    form = LoginForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
-        user = authenticate(request, username=form.cleaned_data["username"], password=form.cleaned_data["password"])
-        if user:
+class VeloprokatLoginView(LoginView):
+    template_name = "login.html"
+    redirect_authenticated_user = True
+
+
+def register(request):
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
             login(request, user)
-            return redirect("main:account")
-        form.add_error(None, "Неверный логин или пароль")
-    return render(request, "login.html", {"form": form})
-
-def logout_view(request):
-    logout(request)
-    return redirect("main:index")
-
-def register_view(request):
-    form = RegisterForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
-        user = form.save(commit=False)
-        user.set_password(form.cleaned_data["password"])
-        user.save()
-        login(request, user)
-        messages.success(request, "Регистрация прошла успешно. Добро пожаловать!")
-        return redirect("main:index")
+            return redirect("profile")
+    else:
+        form = UserCreationForm()
     return render(request, "register.html", {"form": form})

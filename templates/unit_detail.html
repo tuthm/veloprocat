@@ -1,41 +1,68 @@
 {% extends "base.html" %}
-{% block title %}{{ unit.name }} — Велопрокат{% endblock %}
+{% block title %}{{ unit.name }} — ВелоПрокат{% endblock %}
 {% block content %}
-<section class="section">
+<section class="page-head">
   <div class="container">
-    <nav class="breadcrumbs"><a href="{% url 'main:index' %}">Главная</a> / <a href="{% url 'main:catalog' %}">Каталог</a> / {{ unit.name }}</nav>
-    <article class="unit-page">
-      <img src="{{ unit.photo.url }}" alt="Велосипед {{ unit.name }}" width="640" height="480">
-      <div class="unit-info">
-        <p class="unit-cat">{{ unit.category.name }}</p>
-        <h1>{{ unit.name }}</h1>
-        <p class="price price-lg">{{ unit.price_per_day }} ₽ <span>/ сутки</span></p>
-        <p>{{ unit.description }}</p>
-        <span class="badge badge-{% if unit.status == 'free' %}green{% else %}gray{% endif %}">{{ unit.get_status_display }}</span>
-        <div class="unit-actions">
-          {% if unit.status == 'free' %}
-          <a href="{% url 'main:catalog' %}" class="btn btn-primary">Забронировать</a>
-          {% else %}
-          <button class="btn btn-disabled" disabled>Сейчас недоступен</button>
-          {% endif %}
-          <a href="{% url 'main:catalog' %}" class="btn btn-outline">В каталог</a>
-        </div>
-      </div>
-    </article>
-    {% if same %}
-    <h2>Похожие единицы</h2>
-    <div class="grid grid-3">
-      {% for s in same %}
-      <article class="card unit-card">
-        <a href="{% url 'main:unit_detail' s.pk %}">
-          <img src="{{ s.photo.url }}" alt="Велосипед {{ s.name }}" width="640" height="480" loading="lazy">
-        </a>
-        <h3><a href="{% url 'main:unit_detail' s.pk %}">{{ s.name }}</a></h3>
-        <p class="price">{{ s.price_per_day }} ₽ <span>/ сутки</span></p>
-      </article>
-      {% endfor %}
+    <p class="breadcrumbs"><a href="{% url 'main:catalog' %}">Каталог</a> / {{ unit.name }}</p>
+    <h1>{{ unit.name }}</h1>
+  </div>
+</section>
+
+<section class="unit">
+  <div class="container unit__grid">
+    <div class="unit__photo">
+      {% if unit.photo %}<img src="{{ unit.photo.url }}" alt="{{ unit.name }}">
+      {% else %}<div class="unit__placeholder">Bike photo</div>{% endif %}
     </div>
-    {% endif %}
+    <div class="unit__info">
+      <p class="card__category">{{ unit.category.name }}</p>
+      <p class="unit__price"><strong>{{ unit.price_per_day|floatformat:"0" }} ₽</strong> / сутки</p>
+      <span class="status status--{{ unit.status }}">{{ unit.status_label }}</span>
+
+      <div class="calc" data-price="{{ unit.price_per_day }}">
+        <h2>Калькулятор стоимости</h2>
+        <div class="calc__row">
+          <label>С <input type="date" id="calc-start" min=""></label>
+          <label>По <input type="date" id="calc-end" min=""></label>
+        </div>
+        <p class="calc__total">Итого: <strong id="calc-total">—</strong></p>
+      </div>
+
+      {% if user.is_authenticated %}
+        <form method="post" id="booking-form" novalidate>
+          {% csrf_token %}
+          {{ form.unit }}
+          <div class="field">
+            <label for="{{ form.start_date.id_for_label }}">Дата начала</label>
+            {{ form.start_date }}
+            <p class="field-error" data-error="start_date"></p>
+          </div>
+          <div class="field">
+            <label for="{{ form.end_date.id_for_label }}">Дата конца</label>
+            {{ form.end_date }}
+            <p class="field-error" data-error="end_date"></p>
+          </div>
+          <div class="field">
+            <label for="{{ form.phone.id_for_label }}">Телефон</label>
+            {{ form.phone }}
+            <p class="field-error" data-error="phone"></p>
+          </div>
+          <div class="field">
+            <label for="{{ form.email.id_for_label }}">Электронная почта</label>
+            {{ form.email }}
+            <p class="field-error" data-error="email"></p>
+          </div>
+          <p class="form-error" id="form-error">
+            {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+          </p>
+          <button type="submit" class="btn btn--solid">Забронировать</button>
+        </form>
+      {% else %}
+        <p class="hint">Чтобы забронировать, <a href="{% url 'main:login' %}">войдите</a>
+   или <a href="{% url 'main:register' %}">зарегистрируйтесь</a>.</p>
+
+      {% endif %}
+    </div>
   </div>
 </section>
 {% endblock %}
