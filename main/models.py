@@ -1,4 +1,3 @@
-from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
@@ -7,6 +6,7 @@ from django.db import models
 class Category(models.Model):
     name = models.CharField("Название", max_length=100)
     slug = models.SlugField("Слаг", unique=True)
+    description = models.TextField("Описание", blank=True)
 
     class Meta:
         verbose_name = "Категория"
@@ -34,9 +34,26 @@ class BikeUnit(models.Model):
         related_name="units",
         verbose_name="Категория",
     )
-    price_per_day = models.DecimalField("Цена за сутки", max_digits=8, decimal_places=2)
-    status = models.CharField("Статус", max_length=20, choices=STATUS_CHOICES, default=STATUS_FREE)
-    photo = models.ImageField("Фото", upload_to="units/", blank=True, null=True)
+    description = models.TextField("Описание", blank=True)
+    price_per_day = models.DecimalField(
+        "Цена за сутки",
+        max_digits=8,
+        decimal_places=2,
+    )
+    status = models.CharField(
+        "Статус",
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_FREE,
+    )
+    photo = models.ImageField(
+        "Фото",
+        upload_to="units/",
+        blank=True,
+        null=True,
+    )
+    is_popular = models.BooleanField("Популярный", default=False)
+    created_at = models.DateTimeField("Создан", auto_now_add=True)
 
     class Meta:
         verbose_name = "Единица проката"
@@ -75,12 +92,27 @@ class Booking(models.Model):
     )
     start_date = models.DateField("Начало проката")
     end_date = models.DateField("Конец проката")
-    # --- Занятие 9: контакты клиента в брони ---
     phone = models.CharField("Телефон", max_length=12, default="")
-    email = models.EmailField("Электронная почта", blank=True, default="")
-    total = models.DecimalField("Итого", max_digits=10, decimal_places=2)
-    status = models.CharField("Статус", max_length=20, choices=STATUS_CHOICES, default=STATUS_NEW)
-    created_at = models.DateTimeField("Создана", auto_now_add=True)
+    email = models.EmailField(
+        "Электронная почта",
+        blank=True,
+        default="",
+    )
+    total = models.DecimalField(
+        "Итого",
+        max_digits=10,
+        decimal_places=2,
+    )
+    status = models.CharField(
+        "Статус",
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_NEW,
+    )
+    created_at = models.DateTimeField(
+        "Создана",
+        auto_now_add=True,
+    )
 
     class Meta:
         verbose_name = "Бронь"
