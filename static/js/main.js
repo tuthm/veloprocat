@@ -13,7 +13,7 @@ if (burger && nav) {
 /* ---------- Калькулятор стоимости (динамический элемент №1) ---------- */
 const calc = document.querySelector(".calc");
 if (calc) {
-  const price = parseFloat(calc.dataset.price) || 0;
+ const price = Number(calc.dataset.price.replace(",", ".")) || 0;
   const startEl = document.getElementById("calc-start");
   const endEl = document.getElementById("calc-end");
   const totalEl = document.getElementById("calc-total");
@@ -27,8 +27,11 @@ if (calc) {
     if (days < 1) { totalEl.textContent = "—"; return; }
     totalEl.textContent = new Intl.NumberFormat("ru-RU").format(days * price) + " ₽";
   };
-  startEl.addEventListener("change", recalc);
-  endEl.addEventListener("change", recalc);
+  startEl.addEventListener("input", recalc);
+endEl.addEventListener("input", recalc);
+startEl.addEventListener("change", recalc);
+endEl.addEventListener("change", recalc);
+recalc();
 }
 
 /* ---------- Клиентская валидация формы брони ---------- */

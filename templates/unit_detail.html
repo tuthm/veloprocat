@@ -19,7 +19,7 @@
       <p class="unit__price"><strong>{{ unit.price_per_day|floatformat:"0" }} ₽</strong> / сутки</p>
       <span class="status status--{{ unit.status }}">{{ unit.status_label }}</span>
 
-      <div class="calc" data-price="{{ unit.price_per_day }}">
+      <div class="calc" data-price="{{ unit.price_per_day|stringformat:'f' }}">
         <h2>Калькулятор стоимости</h2>
         <div class="calc__row">
           <label>С <input type="date" id="calc-start" min=""></label>
