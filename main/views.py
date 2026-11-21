@@ -1,3 +1,4 @@
+
 from decimal import Decimal
 
 from django.contrib.auth import login
@@ -22,8 +23,6 @@ def index(request):
     })
 
 
-
-
 def catalog(request):
     units = BikeUnit.objects.select_related("category").all()
     category_slug = request.GET.get("category")
@@ -31,19 +30,23 @@ def catalog(request):
 
     if category_slug:
         units = units.filter(category__slug=category_slug)
+
     if query:
         units = units.filter(name__icontains=query)
 
     page_size = 20
     paginator_page = request.GET.get("page", 1)
+
     try:
         page = int(paginator_page)
     except (TypeError, ValueError):
         page = 1
+
     page = max(page, 1)
     total = units.count()
     pages = max(1, (total + page_size - 1) // page_size)
     page = min(page, pages)
+
     items = units[(page - 1) * page_size: page * page_size]
 
     return render(request, "catalog.html", {
@@ -61,8 +64,13 @@ def api_units(request):
     """JSON для живого поиска: /api/units/?q=merida"""
     query = request.GET.get("q", "").strip()
     units = BikeUnit.objects.select_related("category").all()
+
     if query:
-        units = units.filter(Q(name__icontains=query) | Q(category__name__icontains=query))
+        units = units.filter(
+            Q(name__icontains=query) |
+            Q(category__name__icontains=query)
+        )
+
     data = [
         {
             "id": u.pk,
@@ -74,36 +82,68 @@ def api_units(request):
         }
         for u in units[:50]
     ]
-    return JsonResponse({"count": len(data), "units": data})
+
+    return JsonResponse({
+        "count": len(data),
+        "units": data,
+    })
 
 
 def unit_detail(request, pk):
-    unit = get_object_or_404(BikeUnit.objects.select_related("category"), pk=pk)
+    unit = get_object_or_404(
+        BikeUnit.objects.select_related("category"),
+        pk=pk
+    )
+
     initial = {}
+
     if request.user.is_authenticated:
-        initial["phone"] = getattr(request.user, "first_name", "") and ""
+        initial["phone"] = (
+            getattr(request.user, "first_name", "") and ""
+        )
+
     if request.method == "POST":
         if not request.user.is_authenticated:
             return redirect("main:login")
 
         form = BookingForm(request.POST)
+
         if form.is_valid():
             booking = form.save(commit=False)
             booking.user = request.user
-            days = (booking.end_date - booking.start_date).days
-            booking.total = booking.unit.price_per_day * days
+
+            days = (
+                booking.end_date - booking.start_date
+            ).days
+
+            booking.total = (
+                booking.unit.price_per_day * days
+            )
+
             booking.status = Booking.STATUS_NEW
             booking.save()
+
             unit.status = BikeUnit.STATUS_RENTED
             unit.save()
-            return redirect("profile")
+
+            # Исправлено: правильное имя маршрута
+            return redirect("main:profile")
+
     else:
-        form = BookingForm(initial={"unit": unit.pk})
-    return render(request, "unit_detail.html", {"unit": unit, "form": form})
+        form = BookingForm(
+            initial={"unit": unit.pk}
+        )
+
+    return render(request, "unit_detail.html", {
+        "unit": unit,
+        "form": form,
+    })
 
 
 def prices(request):
-    return render(request, "prices.html", {"categories": Category.objects.all()})
+    return render(request, "prices.html", {
+        "categories": Category.objects.all()
+    })
 
 
 def about(request):
@@ -117,11 +157,15 @@ def contacts(request):
 @login_required
 def profile(request):
     bookings = (
-        Booking.objects.filter(user=request.user)
+        Booking.objects
+        .filter(user=request.user)
         .select_related("unit")
         .order_by("-created_at")
     )
-    return render(request, "profile.html", {"bookings": bookings})
+
+    return render(request, "profile.html", {
+        "bookings": bookings
+    })
 
 
 class VeloprokatLoginView(LoginView):
@@ -132,10 +176,17 @@ class VeloprokatLoginView(LoginView):
 def register(request):
     if request.method == "POST":
         form = UserCreationForm(request.POST)
+
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect("profile")
+
+            # BUG-03: исправлено перенаправление
+            return redirect("main:profile")
+
     else:
         form = UserCreationForm()
-    return render(request, "register.html", {"form": form})
+
+    return render(request, "register.html", {
+        "form": form
+    })
