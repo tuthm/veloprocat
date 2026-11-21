@@ -178,3 +178,13 @@ table.cabinet td { padding: 16px; border-top: 1px solid #eef1ee; }
   .grid, .grid-4, .grid-3 { grid-template-columns: 1fr; }
   .footer__grid { grid-template-columns: 1fr; }
 }
+
+.logout-form {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+}
+
+.logout-form button {
+    cursor: pointer;
+}
